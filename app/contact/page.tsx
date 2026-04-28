@@ -74,14 +74,35 @@ const contactMeta = [
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", company: "", email: "", role: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
+    setSubmitting(true);
+    setError(false);
+
+    try {
+      const res = await fetch("https://formspree.io/f/xlgorlqe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        setError(true);
+      }
+    } catch {
+      setError(true);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -295,25 +316,34 @@ export default function ContactPage() {
                 </motion.div>
 
                 <motion.div variants={fadeUp}>
+                  {error && (
+                    <p style={{ fontSize: "14px", color: "#f87171", marginBottom: "12px" }}>
+                      Something went wrong. Please email us directly at{" "}
+                      <a href="mailto:hello@cascadesoftwarelabs.com" style={{ color: "#f87171", textDecoration: "underline" }}>
+                        hello@cascadesoftwarelabs.com
+                      </a>
+                    </p>
+                  )}
                   <button
                     type="submit"
+                    disabled={submitting}
                     style={{
                       display: "inline-block",
                       padding: "14px 36px",
                       borderRadius: "100px",
-                      background: "#ffffff",
+                      background: submitting ? "rgba(255,255,255,0.5)" : "#ffffff",
                       color: "#0a0a0a",
                       fontSize: "14px",
                       fontWeight: 600,
                       border: "none",
-                      cursor: "pointer",
+                      cursor: submitting ? "not-allowed" : "pointer",
                       letterSpacing: "-0.01em",
                       transition: "background 0.2s ease",
                     }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.85)")}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "#ffffff")}
+                    onMouseEnter={(e) => { if (!submitting) (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.85)"; }}
+                    onMouseLeave={(e) => { if (!submitting) (e.currentTarget as HTMLButtonElement).style.background = "#ffffff"; }}
                   >
-                    Schedule Discovery Call
+                    {submitting ? "Sending..." : "Schedule Discovery Call"}
                   </button>
                 </motion.div>
               </form>
